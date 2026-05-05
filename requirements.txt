@@ -1,0 +1,15 @@
+Django>=4.2,<5.0
+djangorestframework>=3.14,<4.0
+djangorestframework-simplejwt>=5.3,<6.0
+django-cors-headers>=4.3,<5.0
+django-filter>=23.0,<25.0
+psycopg2-binary>=2.9,<3.0
+python-dotenv>=1.0,<2.0
+pandas>=2.0,<3.0
+openpyxl>=3.1,<4.0
+openai>=1.0,<2.0
+Pillow>=10.0,<11.0
+gunicorn>=21.0,<23.0
+whitenoise>=6.0,<7.0
+weasyprint<62.0,>=61.0
+pydyf>=0.10.0,<0.11.0
