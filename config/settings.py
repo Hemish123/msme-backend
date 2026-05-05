@@ -103,7 +103,6 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #             }
 #         }
 
-import os
 
 if DEBUG:
     DATABASES = {
@@ -112,35 +111,22 @@ if DEBUG:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
+
 else:
-    CONNECTION_STRING = os.environ.get('AZURE_POSTGRESQL_CONNECTIONSTRING', '')
-
-    if CONNECTION_STRING:
-        import re
-
-        # safer parsing
-        conn = dict(re.findall(r'(\w+)=([^\s]+)', CONNECTION_STRING))
-
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': conn.get('dbname'),
-                'USER': conn.get('user'),
-                'PASSWORD': conn.get('password'),
-                'HOST': conn.get('host'),
-                'PORT': conn.get('port', '5432'),
-                'OPTIONS': {
-                    'sslmode': 'require',
-                },
-            }
+    CONNECTION_STRING = os.environ['AZURE_POSTGRESQL_CONNECTIONSTRING']
+    conn_str_params = {pair.split('=')[0]: pair.split('=')[1] for pair in CONNECTION_STRING.split(' ')}
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': conn_str_params['dbname'],
+            'HOST': conn_str_params['host'],
+            'USER': conn_str_params['user'],
+            'PASSWORD': conn_str_params['password'],
         }
-    else:
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
+    }
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
+
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
