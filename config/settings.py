@@ -12,9 +12,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-change-in-production')
 
-DEBUG = os.environ.get('DEBUG')
-
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,2a12-2405-201-2005-1965-eaaf-2246-a496-7f01.ngrok-free.app').split(',')
+DEBUG = False
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'efe8-2405-201-2005-1965-dab2-9e0a-8855-3c1d.ngrok-free.app','msmebackendjms-gcgbh3f4dndea6dz.centralindia-01.azurewebsites.net']
 
 # Application definition
 INSTALLED_APPS = [
@@ -150,8 +149,8 @@ REST_FRAMEWORK = {
 }
 
 # JWT Settings
-ACCESS_TOKEN_LIFETIME = int(os.environ.get('ACCESS_TOKEN_LIFETIME_DAYS', 36500))
-REFRESH_TOKEN_LIFETIME = int(os.environ.get('REFRESH_TOKEN_LIFETIME_DAYS', 36500))
+ACCESS_TOKEN_LIFETIME = 36500
+REFRESH_TOKEN_LIFETIME = 36500
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=ACCESS_TOKEN_LIFETIME),
@@ -162,8 +161,8 @@ SIMPLE_JWT = {
 }
 
 # CORS
-CORS_ALLOW_ALL_ORIGINS = os.environ.get('CORS_ALLOW_ALL_ORIGINS', 'True').lower() in ('true', '1', 'yes')
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173').split(',')
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
 CORS_ALLOW_CREDENTIALS = True
 
 # Azure OpenAI
@@ -173,24 +172,24 @@ AZURE_OPENAI_DEPLOYMENT = os.environ.get('AZURE_OPENAI_DEPLOYMENT', 'gpt-4o')
 AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION', '2024-05-01-preview')
 
 # File upload
-FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get('FILE_UPLOAD_MAX_MEMORY_SIZE', 10 * 1024 * 1024))
-DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.environ.get('DATA_UPLOAD_MAX_MEMORY_SIZE', 10 * 1024 * 1024))
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 
 # Email Settings
-EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
-EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
-EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'JMS Advisory <resumate1nfo1@gmail.com>')
+DEFAULT_FROM_EMAIL = 'JMS Advisory <resumate1nfo1@gmail.com>'
 
 # Invoice Module Company Info
-INVOICE_COMPANY_NAME = os.environ.get('INVOICE_COMPANY_NAME', 'JMS Advisory')
-INVOICE_COMPANY_ADDRESS = os.environ.get('INVOICE_COMPANY_ADDRESS', '401 Anand mangal 3, Ahmedabad, Gujarat 380015')
-INVOICE_COMPANY_GST = os.environ.get('INVOICE_COMPANY_GST', '24BTIPD4800M1ZT')
-INVOICE_COMPANY_PHONE = os.environ.get('INVOICE_COMPANY_PHONE', '+91 92744 25300')
-INVOICE_COMPANY_EMAIL = os.environ.get('INVOICE_COMPANY_EMAIL', 'info@jmsadvisory.in')
+INVOICE_COMPANY_NAME = 'JMS Advisory'
+INVOICE_COMPANY_ADDRESS = '401 Anand mangal 3, Ahmedabad, Gujarat 380015'
+INVOICE_COMPANY_GST = '24BTIPD4800M1ZT'
+INVOICE_COMPANY_PHONE = '+91 92744 25300'
+INVOICE_COMPANY_EMAIL = 'info@jmsadvisory.in'
 
 # ---------------------------------------------------------------------------
 # Logging Configuration
