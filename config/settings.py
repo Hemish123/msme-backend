@@ -73,6 +73,38 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+# if DEBUG:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.sqlite3',
+#             'NAME': BASE_DIR / 'db.sqlite3',
+#         }
+#     }
+# else:
+#     CONNECTION_STRING = os.environ.get('AZURE_POSTGRESQL_CONNECTIONSTRING', '')
+#     if CONNECTION_STRING:
+#         conn_str_params = {pair.split('=')[0]: pair.split('=')[1] for pair in CONNECTION_STRING.split(' ') if '=' in pair}
+
+#         DATABASES = {
+#             'default': {
+#                 'ENGINE': 'django.db.backends.postgresql',
+#                 'NAME': conn_str_params.get('dbname', ''),
+#                 'HOST': conn_str_params.get('host', ''),
+#                 'USER': conn_str_params.get('user', ''),
+#                 'PASSWORD': conn_str_params.get('password', ''),
+#             }
+#         }
+#     else:
+#         # Fallback to avoid crashes if ENV var is missing
+#         DATABASES = {
+#             'default': {
+#                 'ENGINE': 'django.db.backends.sqlite3',
+#                 'NAME': BASE_DIR / 'db.sqlite3',
+#             }
+#         }
+
+import os
+
 if DEBUG:
     DATABASES = {
         'default': {
@@ -82,20 +114,27 @@ if DEBUG:
     }
 else:
     CONNECTION_STRING = os.environ.get('AZURE_POSTGRESQL_CONNECTIONSTRING', '')
+
     if CONNECTION_STRING:
-        conn_str_params = {pair.split('=')[0]: pair.split('=')[1] for pair in CONNECTION_STRING.split(' ') if '=' in pair}
+        import re
+
+        # safer parsing
+        conn = dict(re.findall(r'(\w+)=([^\s]+)', CONNECTION_STRING))
 
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': conn_str_params.get('dbname', ''),
-                'HOST': conn_str_params.get('host', ''),
-                'USER': conn_str_params.get('user', ''),
-                'PASSWORD': conn_str_params.get('password', ''),
+                'NAME': conn.get('dbname'),
+                'USER': conn.get('user'),
+                'PASSWORD': conn.get('password'),
+                'HOST': conn.get('host'),
+                'PORT': conn.get('port', '5432'),
+                'OPTIONS': {
+                    'sslmode': 'require',
+                },
             }
         }
     else:
-        # Fallback to avoid crashes if ENV var is missing
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
