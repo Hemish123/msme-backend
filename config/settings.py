@@ -112,21 +112,28 @@ if DEBUG:
         }
     }
 
-
 else:
-    CONNECTION_STRING = os.environ['AZURE_POSTGRESQL_CONNECTIONSTRING']
-    conn_str_params = {pair.split('=')[0]: pair.split('=')[1] for pair in CONNECTION_STRING.split(' ')}
+    import re
+    CONNECTION_STRING = os.environ.get('AZURE_POSTGRESQL_CONNECTIONSTRING', '')
+
+    # ✅ safer parsing (handles special chars)
+    conn_str_params = dict(re.findall(r'(\w+)=([^\s]+)', CONNECTION_STRING))
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': conn_str_params['dbname'],
-            'HOST': conn_str_params['host'],
-            'USER': conn_str_params['user'],
-            'PASSWORD': conn_str_params['password'],
+            'NAME': conn_str_params.get('dbname', 'postgres'),
+            'HOST': conn_str_params.get('host'),
+            'USER': conn_str_params.get('user'),
+            'PASSWORD': conn_str_params.get('password'),
+            'PORT': conn_str_params.get('port', '5432'),   # ✅ added
+            'OPTIONS': {
+                'sslmode': 'require',                     # ✅ VERY IMPORTANT
+            },
         }
     }
-    ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
 
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
