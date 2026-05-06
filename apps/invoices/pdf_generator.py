@@ -1,4 +1,5 @@
 import os
+from io import BytesIO
 from collections import defaultdict
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -45,8 +46,8 @@ def number_to_words(n):
 
 
 def generate_invoice_pdf(invoice):
-    """Generate PDF bytes for a given Invoice instance."""
-    import weasyprint  # Lazy import
+    """Generate PDF bytes for a given Invoice instance using xhtml2pdf (pure Python, no system deps)."""
+    from xhtml2pdf import pisa  # Lazy import — pure Python, no C library deps
 
     items = list(invoice.items.all())
     customer = invoice.customer
@@ -114,4 +115,16 @@ def generate_invoice_pdf(invoice):
         'tax_in_words': tax_in_words,
     }
     html_string = render_to_string('invoices/invoice_pdf.html', context)
-    return weasyprint.HTML(string=html_string, base_url=str(settings.BASE_DIR)).write_pdf()
+
+    # Generate PDF using xhtml2pdf (pisa)
+    result_buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(
+        src=html_string,
+        dest=result_buffer,
+        encoding='utf-8',
+    )
+
+    if pisa_status.err:
+        raise RuntimeError(f"PDF generation failed with {pisa_status.err} error(s)")
+
+    return result_buffer.getvalue()
