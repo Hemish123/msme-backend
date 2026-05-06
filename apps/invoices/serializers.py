@@ -18,7 +18,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = '__all__'
-        read_only_fields = ['id', 'subtotal', 'tax_total', 'grand_total',
+        read_only_fields = ['id', 'user', 'subtotal', 'tax_total', 'grand_total',
                             'email_sent', 'email_sent_at', 'created_at', 'updated_at']
 
     def create(self, validated_data):
