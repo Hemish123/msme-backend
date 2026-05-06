@@ -20,6 +20,9 @@ class InvoiceSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['id', 'user', 'subtotal', 'tax_total', 'grand_total',
                             'email_sent', 'email_sent_at', 'created_at', 'updated_at']
+        extra_kwargs = {
+            'status': {'required': False},
+        }
 
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])

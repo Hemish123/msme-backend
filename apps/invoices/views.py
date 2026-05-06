@@ -31,7 +31,9 @@ class InvoiceCreateView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            print("[InvoiceCreate] Validation errors: %s" % serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         invoice = serializer.save(user=request.user)
 
         # Calculate totals from items

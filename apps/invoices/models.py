@@ -18,7 +18,7 @@ class Invoice(models.Model):
     )
     order_date = models.DateField()
     billing_date = models.DateField()
-    billing_to = models.TextField()
+    billing_to = models.TextField(blank=True, default='')
     shipping_to = models.TextField(blank=True, default='')
     order_reference = models.CharField(max_length=100, blank=True, default='')
     payment_terms = models.CharField(max_length=100, blank=True, default='')
