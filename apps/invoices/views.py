@@ -11,6 +11,7 @@ from .models import Invoice, InvoiceItem
 from .serializers import InvoiceSerializer, InvoiceListSerializer
 from .number_generator import generate_invoice_number
 from .pdf_generator import generate_invoice_pdf
+from .pdf_templates import TEMPLATE_INFO
 from .email_service import InvoiceEmailService
 from apps.customers.models import Customer
 
@@ -81,12 +82,22 @@ class InvoicePDFView(APIView):
 
     def get(self, request, pk):
         invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
-        pdf_bytes = generate_invoice_pdf(invoice)
+        # Allow template override via query param (for preview)
+        template_key = request.query_params.get('template', None)
+        pdf_bytes = generate_invoice_pdf(invoice, template_key=template_key)
         response = HttpResponse(pdf_bytes, content_type='application/pdf')
         response['Content-Disposition'] = (
             'attachment; filename="Invoice_%s.pdf"' % invoice.invoice_number.replace("/", "-")
         )
         return response
+
+
+class InvoiceTemplatesView(APIView):
+    """Return list of available invoice templates."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(TEMPLATE_INFO)
 
 
 class ResendInvoiceEmailView(APIView):
@@ -156,3 +167,29 @@ class InvoiceStatsView(APIView):
             'month_paid': float(month_paid),
             'recent_invoices': recent_invoices,
         })
+
+
+class ScheduleReminderView(APIView):
+    """Schedule a reminder email for an invoice."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
+        if invoice.status == 'PAID':
+            return Response({'error': 'Cannot schedule reminder for a paid invoice'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        scheduled_at = request.data.get('scheduled_at')
+        if not scheduled_at:
+            return Response({'error': 'scheduled_at is required'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            # Parse datetime
+            from dateutil import parser
+            dt = parser.parse(scheduled_at)
+            
+            invoice.reminder_scheduled_at = dt
+            invoice.reminder_sent = False
+            invoice.save(update_fields=['reminder_scheduled_at', 'reminder_sent'])
+            return Response({'message': 'Reminder scheduled successfully', 'scheduled_at': invoice.reminder_scheduled_at})
+        except Exception as e:
+            return Response({'error': f'Invalid datetime format: {e}'}, status=status.HTTP_400_BAD_REQUEST)

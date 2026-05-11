@@ -11,7 +11,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'password', 'password_confirm',
-                  'company_name', 'phone', 'first_name', 'last_name']
+                  'company_name', 'company_gst', 'company_street', 'company_city', 
+                  'company_state', 'company_pin', 'company_email', 'bank_name', 
+                  'bank_account_number', 'bank_ifsc', 'company_logo', 'phone', 
+                  'first_name', 'last_name']
 
     def validate(self, data):
         if data['password'] != data['password_confirm']:
@@ -73,5 +76,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'username', 'first_name', 'last_name',
-                  'company_name', 'phone', 'created_at']
+                  'company_name', 'company_gst', 'company_street', 'company_city', 
+                  'company_state', 'company_pin', 'company_email', 'bank_name', 
+                  'bank_account_number', 'bank_ifsc', 'company_logo', 'phone', 
+                  'created_at']
         read_only_fields = ['id', 'email', 'created_at']

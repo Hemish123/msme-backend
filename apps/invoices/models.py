@@ -7,6 +7,13 @@ INVOICE_STATUS = [
     ('PAID', 'Paid'), ('OVERDUE', 'Overdue'),
 ]
 
+TEMPLATE_CHOICES = [
+    ('classic', 'Classic'),
+    ('modern', 'Modern'),
+    ('elegant', 'Elegant'),
+    ('minimal', 'Minimal'),
+]
+
 
 from django.conf import settings
 
@@ -27,6 +34,9 @@ class Invoice(models.Model):
     tax_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     grand_total = models.DecimalField(max_digits=14, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=INVOICE_STATUS, default='DRAFT')
+    template = models.CharField(max_length=20, choices=TEMPLATE_CHOICES, default='classic')
+    reminder_scheduled_at = models.DateTimeField(null=True, blank=True)
+    reminder_sent = models.BooleanField(default=False)
     email_sent = models.BooleanField(default=False)
     email_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

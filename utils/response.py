@@ -19,7 +19,7 @@ def api_error(message='An error occurred', errors=None,
     """Shortcut for error responses."""
     
     # Automatically extract the first specific error message to display in the main 'message' field
-    if errors and message == 'An error occurred':
+    if errors:
         try:
             first_field = next(iter(errors))
             first_error = errors[first_field]

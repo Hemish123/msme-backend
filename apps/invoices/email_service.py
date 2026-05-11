@@ -8,23 +8,31 @@ from apps.invoices.pdf_generator import generate_invoice_pdf
 class InvoiceEmailService:
     """Service for sending invoice emails with PDF attachments."""
 
-    def send_invoice_email(self, invoice):
+    def send_invoice_email(self, invoice, is_reminder=False):
         """Send invoice email with PDF attachment."""
         try:
             pdf_bytes = generate_invoice_pdf(invoice)
-            company = getattr(settings, 'INVOICE_COMPANY_NAME', 'Your Company')
+            user = getattr(invoice, 'user', None)
+            company = user.company_name if user and user.company_name else getattr(settings, 'INVOICE_COMPANY_NAME', 'Your Company')
+            contact_email = user.company_email if user and user.company_email else settings.DEFAULT_FROM_EMAIL
 
-            subject = f"Invoice #{invoice.invoice_number} from {company}"
+            if is_reminder:
+                subject = f"Reminder: Invoice #{invoice.invoice_number} from {company} is due"
+                intro_text = f"This is a gentle reminder regarding your invoice #{invoice.invoice_number} which is currently pending.\n\n"
+            else:
+                subject = f"Invoice #{invoice.invoice_number} from {company}"
+                intro_text = f"Please find attached your invoice #{invoice.invoice_number}.\n\n"
+
             body = (
                 f"Dear {invoice.customer.name},\n\n"
-                f"Please find attached your invoice #{invoice.invoice_number}.\n\n"
+                f"{intro_text}"
                 f"Invoice Details:\n"
                 f"  Invoice Number : {invoice.invoice_number}\n"
                 f"  Billing Date   : {invoice.billing_date}\n"
                 f"  Payment Terms  : {invoice.payment_terms or 'N/A'}\n"
                 f"  Grand Total    : ₹{invoice.grand_total}\n\n"
                 f"Kindly make the payment within the agreed terms.\n\n"
-                f"For queries, reach us at {settings.DEFAULT_FROM_EMAIL}.\n\n"
+                f"For queries, reach us at {contact_email}.\n\n"
                 f"Thank you for your business!\n\n"
                 f"Best regards,\n{company}"
             )

@@ -19,9 +19,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = '__all__'
         read_only_fields = ['id', 'user', 'subtotal', 'tax_total', 'grand_total',
-                            'email_sent', 'email_sent_at', 'created_at', 'updated_at']
+                            'email_sent', 'email_sent_at', 'reminder_sent', 'created_at', 'updated_at']
         extra_kwargs = {
             'status': {'required': False},
+            'template': {'required': False},
+            'reminder_scheduled_at': {'required': False},
         }
 
     def create(self, validated_data):
@@ -77,4 +79,5 @@ class InvoiceListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = ['id', 'invoice_number', 'customer', 'customer_name', 'customer_email',
-                  'billing_date', 'grand_total', 'status', 'email_sent', 'created_at']
+                  'billing_date', 'grand_total', 'status', 'template', 'email_sent', 
+                  'reminder_scheduled_at', 'reminder_sent', 'created_at']

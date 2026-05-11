@@ -5,11 +5,12 @@ from django.conf import settings
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 )
+
+from .pdf_templates import get_template_config
 
 
 def number_to_words(n):
@@ -53,94 +54,51 @@ def number_to_words(n):
 
 
 # ---------------------------------------------------------------------------
-#  Styles
-# ---------------------------------------------------------------------------
-
-def _get_styles():
-    """Return a dict of ParagraphStyles used in the invoice."""
-    base = getSampleStyleSheet()
-    return {
-        'title': ParagraphStyle(
-            'InvTitle', parent=base['Heading1'],
-            fontSize=14, alignment=1, spaceAfter=4, textColor=colors.HexColor('#222222'),
-        ),
-        'company': ParagraphStyle(
-            'Company', parent=base['Normal'],
-            fontSize=12, textColor=colors.HexColor('#d62828'), leading=14,
-            alignment=2,  # right-align
-        ),
-        'normal': ParagraphStyle(
-            'InvNormal', parent=base['Normal'],
-            fontSize=9, leading=12,
-        ),
-        'normal_right': ParagraphStyle(
-            'InvNormalR', parent=base['Normal'],
-            fontSize=9, leading=12, alignment=2,
-        ),
-        'bold': ParagraphStyle(
-            'InvBold', parent=base['Normal'],
-            fontSize=9, leading=12, fontName='Helvetica-Bold',
-        ),
-        'bold_right': ParagraphStyle(
-            'InvBoldR', parent=base['Normal'],
-            fontSize=9, leading=12, fontName='Helvetica-Bold', alignment=2,
-        ),
-        'small': ParagraphStyle(
-            'InvSmall', parent=base['Normal'],
-            fontSize=8, leading=10, textColor=colors.HexColor('#555555'),
-        ),
-        'terms': ParagraphStyle(
-            'InvTerms', parent=base['Normal'],
-            fontSize=8, leading=11,
-        ),
-    }
-
-
-# ---------------------------------------------------------------------------
-#  Table helpers
-# ---------------------------------------------------------------------------
-
-_HEADER_BG = colors.HexColor('#faefef')
-_BORDER = colors.HexColor('#cccccc')
-
-
-def _header_table_style():
-    """Style for the item / HSN header tables."""
-    return TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), _HEADER_BG),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.5, _BORDER),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-    ])
-
-
-# ---------------------------------------------------------------------------
 #  Main PDF builder
 # ---------------------------------------------------------------------------
 
-def generate_invoice_pdf(invoice):
-    """Generate PDF bytes for a given Invoice instance using ReportLab (pure Python)."""
+def generate_invoice_pdf(invoice, template_key=None):
+    """Generate PDF bytes for a given Invoice instance using ReportLab.
+
+    Args:
+        invoice: Invoice model instance
+        template_key: Optional override; defaults to invoice.template field
+    """
+    # Determine template
+    tpl_key = template_key or getattr(invoice, 'template', 'classic') or 'classic'
+    cfg = get_template_config(tpl_key)
+    styles = cfg['styles']
+    table_style = cfg['table_style']
+    header_line_color = colors.HexColor(cfg['header_line_color'])
+    accent = colors.HexColor(cfg['accent'])
 
     items = list(invoice.items.all())
     customer = invoice.customer
-    styles = _get_styles()
 
     # Company settings
-    company_name = getattr(settings, 'INVOICE_COMPANY_NAME', 'JMS Advisory')
-    company_address = getattr(settings, 'INVOICE_COMPANY_ADDRESS', '')
-    company_gst = getattr(settings, 'INVOICE_COMPANY_GST', '')
-    company_phone = getattr(settings, 'INVOICE_COMPANY_PHONE', '')
-    company_email = getattr(settings, 'INVOICE_COMPANY_EMAIL', '')
+    user = getattr(invoice, 'user', None)
+    
+    company_name = user.company_name if user and user.company_name else getattr(settings, 'INVOICE_COMPANY_NAME', 'JMS Advisory')
+    
+    if user and any([user.company_street, user.company_city, user.company_state, user.company_pin]):
+        addr_parts = filter(bool, [user.company_street, user.company_city, user.company_state, user.company_pin])
+        company_address = ', '.join(addr_parts)
+    else:
+        company_address = getattr(settings, 'INVOICE_COMPANY_ADDRESS', '')
+        
+    company_gst = user.company_gst if user and user.company_gst else getattr(settings, 'INVOICE_COMPANY_GST', '')
+    company_phone = user.phone if user and user.phone else getattr(settings, 'INVOICE_COMPANY_PHONE', '')
+    company_email = user.company_email if user and user.company_email else getattr(settings, 'INVOICE_COMPANY_EMAIL', '')
 
     # Logo
-    logo_path = os.path.join(settings.BASE_DIR, 'static', 'invoices', 'jms_logo.png')
-    if not os.path.exists(logo_path):
-        logo_path = None
+    logo_path = None
+    if user and user.company_logo:
+        logo_path = user.company_logo.path
+
+    if not logo_path or not os.path.exists(logo_path):
+        logo_path = os.path.join(settings.BASE_DIR, 'static', 'invoices', 'jms_logo.png')
+        if not os.path.exists(logo_path):
+            logo_path = None
 
     # HSN summary
     hsn_map = defaultdict(lambda: {'taxable': 0, 'tax_pct': 0})
@@ -200,7 +158,7 @@ def generate_invoice_pdf(invoice):
     header_table.setStyle(TableStyle([
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (1, 0), (1, 0), 'RIGHT'),
-        ('LINEBELOW', (0, 0), (-1, -1), 0.5, _BORDER),
+        ('LINEBELOW', (0, 0), (-1, -1), 0.5, header_line_color),
         ('TOPPADDING', (0, 0), (-1, -1), 0),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
     ]))
@@ -231,13 +189,14 @@ def generate_invoice_pdf(invoice):
     if invoice.note:
         shipping_text += f'<br/><br/><b>Note:</b> {invoice.note}'
 
+    border_c = colors.HexColor(cfg['border_color'])
     bill_ship_data = [[
         Paragraph(billing_text, styles['normal']),
         Paragraph(shipping_text, styles['normal']),
     ]]
     bill_ship_table = Table(bill_ship_data, colWidths=[page_w / 2, page_w / 2])
     bill_ship_table.setStyle(TableStyle([
-        ('BOX', (0, 0), (-1, -1), 0.5, _BORDER),
+        ('BOX', (0, 0), (-1, -1), 0.5, border_c),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
@@ -249,14 +208,9 @@ def generate_invoice_pdf(invoice):
 
     # -- Items table --
     col_widths = [
-        page_w * 0.05,  # Sr
-        page_w * 0.28,  # Description
-        page_w * 0.12,  # HSN
-        page_w * 0.07,  # Qty
-        page_w * 0.08,  # Unit
-        page_w * 0.14,  # Unit Price
-        page_w * 0.08,  # Tax
-        page_w * 0.18,  # Amount
+        page_w * 0.05, page_w * 0.28, page_w * 0.12,
+        page_w * 0.07, page_w * 0.08, page_w * 0.14,
+        page_w * 0.08, page_w * 0.18,
     ]
     item_header = ['Sr.', 'Description', 'HSN', 'Qty', 'Unit', 'Unit Price', 'Tax', 'Amount']
     item_rows = [item_header]
@@ -284,8 +238,7 @@ def generate_invoice_pdf(invoice):
     ])
 
     item_table = Table(item_rows, colWidths=col_widths, repeatRows=1)
-    ts = _header_table_style()
-    # Bold the last row
+    ts = TableStyle(table_style.getCommands())  # copy
     last_row = len(item_rows) - 1
     ts.add('FONTNAME', (0, last_row), (-1, last_row), 'Helvetica-Bold')
     item_table.setStyle(ts)
@@ -327,7 +280,7 @@ def generate_invoice_pdf(invoice):
     ])
 
     hsn_table = Table(hsn_rows, colWidths=hsn_col_widths, repeatRows=1)
-    hsn_ts = _header_table_style()
+    hsn_ts = TableStyle(table_style.getCommands())
     hsn_last = len(hsn_rows) - 1
     hsn_ts.add('FONTNAME', (0, hsn_last), (-1, hsn_last), 'Helvetica-Bold')
     hsn_table.setStyle(hsn_ts)
@@ -342,13 +295,27 @@ def generate_invoice_pdf(invoice):
 
     # -- Terms & Conditions --
     payment_terms = invoice.payment_terms or '_______________________________'
+    
+    bank_details_html = ''
+    if user and (user.bank_name or user.bank_account_number or user.bank_ifsc):
+        bank_details_html = (
+            f'Bank A/c: {user.bank_name or "N/A"}<br/>'
+            f'A/c No.: {user.bank_account_number or "N/A"}<br/>'
+            f'IFSC: {user.bank_ifsc or "N/A"}<br/><br/>'
+        )
+    else:
+        # Default fallback
+        bank_details_html = (
+            f'Bank A/c: Nyra Enterprise<br/>'
+            f'Kotak Mahindra Bank<br/>'
+            f'A/c No.: 6450832888<br/>'
+            f'IFSC: KKBK0002573 (Vastrapur Branch)<br/><br/>'
+        )
+
     terms_text = (
         f'<b>Terms &amp; Conditions</b><br/>'
         f'Payment Terms: {payment_terms}<br/>'
-        f'Bank A/c: Nyra Enterprise<br/>'
-        f'Kotak Mahindra Bank<br/>'
-        f'A/c No.: 6450832888<br/>'
-        f'IFSC: KKBK0002573 (Vastrapur Branch)<br/><br/>'
+        f'{bank_details_html}'
         f'<b>Declaration:</b> This invoice reflects the actual price of goods sold. '
         f'All particulars are true.'
     )
