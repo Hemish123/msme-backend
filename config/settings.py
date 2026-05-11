@@ -155,7 +155,6 @@ USE_TZ = True
 # Static files
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 
 # Media files
 MEDIA_URL = '/media/'
@@ -306,7 +305,7 @@ else:
             'file': {
                 'level': 'ERROR',
                 'class': 'logging.FileHandler',
-                'filename': '/home/site/wwwroot/django_errors.log',
+                'filename': '/home/site/wwwroot/django_errors.log' if os.path.exists('/home/site/wwwroot') else BASE_DIR / 'django_errors.log',
                 'formatter': 'verbose',
             },
         },

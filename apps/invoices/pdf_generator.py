@@ -91,14 +91,17 @@ def generate_invoice_pdf(invoice, template_key=None):
     company_email = user.company_email if user and user.company_email else getattr(settings, 'INVOICE_COMPANY_EMAIL', '')
 
     # Logo
-    logo_path = None
+    logo_file = None
     if user and user.company_logo:
-        logo_path = user.company_logo.path
+        try:
+            logo_file = BytesIO(user.company_logo.read())
+        except Exception:
+            logo_file = None
 
-    if not logo_path or not os.path.exists(logo_path):
+    if not logo_file:
         logo_path = os.path.join(settings.BASE_DIR, 'static', 'invoices', 'jms_logo.png')
-        if not os.path.exists(logo_path):
-            logo_path = None
+        if os.path.exists(logo_path):
+            logo_file = logo_path
 
     # HSN summary
     hsn_map = defaultdict(lambda: {'taxable': 0, 'tax_pct': 0})
@@ -139,9 +142,9 @@ def generate_invoice_pdf(invoice, template_key=None):
 
     # -- Header (logo + company info) --
     logo_cell = ''
-    if logo_path:
+    if logo_file:
         try:
-            logo_cell = Image(logo_path, width=22 * mm, height=22 * mm)
+            logo_cell = Image(logo_file, width=22 * mm, height=22 * mm)
         except Exception:
             logo_cell = ''
 
