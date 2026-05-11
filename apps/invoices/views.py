@@ -190,6 +190,10 @@ class ScheduleReminderView(APIView):
             invoice.reminder_scheduled_at = dt
             invoice.reminder_sent = False
             invoice.save(update_fields=['reminder_scheduled_at', 'reminder_sent'])
-            return Response({'message': 'Reminder scheduled successfully', 'scheduled_at': invoice.reminder_scheduled_at})
+            return Response({
+                'success': True,
+                'message': 'Reminder scheduled successfully', 
+                'scheduled_at': invoice.reminder_scheduled_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
         except Exception as e:
             return Response({'error': f'Invalid datetime format: {e}'}, status=status.HTTP_400_BAD_REQUEST)
