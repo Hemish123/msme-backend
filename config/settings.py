@@ -163,11 +163,32 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 if not DEBUG:
     # In production, use Azure Blob Storage for Media files
-    DEFAULT_FILE_STORAGE = 'storages.backends.azure_storage.AzureStorage'
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+        "media": {
+            "BACKEND": "storages.backends.azure_storage.AzureStorage",
+            "OPTIONS": {
+                "account_name": os.environ.get('AZURE_ACCOUNT_NAME'),
+                "account_key": os.environ.get('AZURE_ACCOUNT_KEY'),
+                "azure_container": os.environ.get('AZURE_CONTAINER'),
+                "expiration_secs": None,
+            },
+        },
+    }
+    # Tell Django to use the 'media' storage backend for media files
+    # Actually, for media, Django 4.2+ uses STORAGES['default'] for file fields by default unless specified.
+    # To override the default storage for FileFields/ImageFields:
+    STORAGES["default"] = STORAGES["media"]
+    
     AZURE_ACCOUNT_NAME = os.environ.get('AZURE_ACCOUNT_NAME')
     AZURE_ACCOUNT_KEY = os.environ.get('AZURE_ACCOUNT_KEY')
     AZURE_CONTAINER = os.environ.get('AZURE_CONTAINER')
-    AZURE_URL_EXPIRATION_SECS = None  # Use public blob URLs if container is public
+    AZURE_URL_EXPIRATION_SECS = None
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # REST Framework
