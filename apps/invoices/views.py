@@ -185,7 +185,11 @@ class ScheduleReminderView(APIView):
         try:
             # Parse datetime
             from dateutil import parser
+            from django.utils import timezone
             dt = parser.parse(scheduled_at)
+            
+            if timezone.is_naive(dt):
+                dt = timezone.make_aware(dt, timezone.get_default_timezone())
             
             invoice.reminder_scheduled_at = dt
             invoice.reminder_sent = False
