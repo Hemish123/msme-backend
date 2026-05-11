@@ -13,3 +13,4 @@ gunicorn>=21.2.0,<23.0
 whitenoise>=6.6.0,<7.0
 reportlab>=4.0
 apscheduler>=3.10.0
+django-storages[azure]>=1.14.2
